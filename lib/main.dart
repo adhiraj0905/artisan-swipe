@@ -53,7 +53,7 @@ class _MainScreenState extends State<MainScreen> {
                   });
                 },
               ),
-              const SearchScreen(),
+              SearchScreen(onNavigateHome: _navigateToHome), 
               FavoritesScreen(favorites: _favorites),
               const ProfileScreen(),
               const CartScreen(), // Added the 5th screen
@@ -69,44 +69,53 @@ class _MainScreenState extends State<MainScreen> {
 
   // Method to build the frosted navigation bar
   Widget _buildFrostedNavBar() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-                color: Colors.white.withOpacity(0.20),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.25)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home_outlined, 0),
-                  _buildNavItem(Icons.search, 1),
-                  _buildNavItem(Icons.favorite_border, 2, label: "Wishlist"),
-                  _buildNavItem(Icons.person_outline, 3),
-                  _buildNavItem(Icons.shopping_bag_outlined, 4),
-                ],
-              ),
+  // Check if the keyboard is visible by looking at the bottom inset
+  final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+  // If the keyboard is open, return an empty, zero-sized widget
+  if (isKeyboardOpen) {
+    return const SizedBox.shrink();
+  }
+
+  // Otherwise, build and return the navigation bar as usual
+  return Align(
+    alignment: Alignment.bottomCenter,
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+              color: Colors.white.withOpacity(0.20),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.25)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(Icons.home_outlined, 0),
+                _buildNavItem(Icons.search, 1),
+                _buildNavItem(Icons.favorite_border, 2, label: "Wishlist"),
+                _buildNavItem(Icons.person_outline, 3),
+                _buildNavItem(Icons.shopping_bag_outlined, 4),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // Helper method to build each navigation icon
   Widget _buildNavItem(IconData icon, int index, {String? label}) {
@@ -118,6 +127,12 @@ class _MainScreenState extends State<MainScreen> {
       tooltip: label, // Optional: for accessibility
     );
   }
+
+  void _navigateToHome() {
+  setState(() {
+    _currentIndex = 0;
+  });
+ }
 }
 
 // ---------------------- SWIPE DEMO ----------------------
@@ -633,19 +648,208 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 }
 
 // ---------------------- SEARCH SCREEN ----------------------
-class SearchScreen extends StatelessWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+// REPLACE your old SearchScreen StatelessWidget with this entire class
+
+class SearchScreen extends StatefulWidget {
+  final VoidCallback onNavigateHome; // 1. Add this line
+
+  // 2. Update the constructor
+  const SearchScreen({Key? key, required this.onNavigateHome}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Search", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF7D3C98),
+  _SearchScreenState createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final _searchController = TextEditingController();
+  final _focusNode = FocusNode();
+  bool _isSearching = false;
+
+  // --- Mock Data (replace with your actual data later) ---
+  final List<String> _categories = [
+    'Painting', 'Drawing', 'Sculpture', 'Printmaking', 
+    'Photograph', 'Digital Art', 'Glass Work'
+  ];
+  final List<String> _searchHistory = ['Glass', 'Human'];
+  final List<String> _popularSearches = ['Glass', 'Pot', 'Rug'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to focus changes to toggle between the two views
+    _focusNode.addListener(() {
+      setState(() {
+        _isSearching = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  // --- Main Build Method ---
+  // In _SearchScreenState, update the main build method
+
+@override
+Widget build(BuildContext context) {
+  // Use PopScope to control the back button behavior
+  return PopScope(
+  canPop: false, // We will handle all back presses manually
+  onPopInvoked: (didPop) {
+    if (didPop) return;
+
+    if (_isSearching) {
+      // If searching, just unfocus to return to categories
+      setState(() {
+        _focusNode.unfocus();
+      });
+    } else {
+      // Otherwise, call the function to navigate to the Home screen
+      widget.onNavigateHome();
+    }
+  },
+    child: Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTap: () => _focusNode.unfocus(),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSearchBar(),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: _isSearching
+                      ? _buildActiveSearchView()
+                      : _buildCategoriesView(),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      body: const Center(
-        child: Text("Search Screen (Coming Soon)"),
-      ),
+    ),
+  );
+}
+
+  // --- UI Helper Methods ---
+
+  // In _SearchScreenState, replace the old _buildSearchBar method
+
+Widget _buildSearchBar() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 20.0),
+    child: Row(
+      children: [
+        // The TextField now expands to fill the available space
+        Expanded(
+          child: TextField(
+            controller: _searchController,
+            focusNode: _focusNode,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[900],
+              hintText: 'Search',
+              hintStyle: TextStyle(color: Colors.grey[600]),
+              
+              // 1. Change the prefix icon to the search icon
+              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+              
+              // 2. Remove the suffixIcon property entirely
+              // suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
+
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+        // This 'X' button only appears when the user is searching
+        if (_isSearching)
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                _searchController.clear();
+                _focusNode.unfocus();
+              },
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildCategoriesView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(color: Colors.grey),
+        const SizedBox(height: 20),
+        const Text(
+          'CATEGORIES',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _categories.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(_categories[index], style: const TextStyle(color: Colors.white, fontSize: 16)),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                onTap: () {
+                  // TODO: Implement navigation to category results page
+                  print('Tapped on ${_categories[index]}');
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveSearchView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // --- Search History Section ---
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('SEARCH HISTORY', style: TextStyle(color: Colors.grey, fontSize: 14)),
+            TextButton(
+              onPressed: () {
+                // TODO: Implement clear history logic
+                setState(() {
+                  _searchHistory.clear();
+                });
+              },
+              child: const Text('CLEAR', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+        ..._searchHistory.map((term) => Text(term, style: const TextStyle(color: Colors.white, fontSize: 16))).toList(),
+        
+        const SizedBox(height: 30),
+
+        // --- Popular Searches Section ---
+        const Text('POPULAR SEARCHES', style: TextStyle(color: Colors.grey, fontSize: 14)),
+        const SizedBox(height: 10),
+        ..._popularSearches.map((term) => Text(term, style: const TextStyle(color: Colors.white, fontSize: 16))).toList(),
+      ],
     );
   }
 }
