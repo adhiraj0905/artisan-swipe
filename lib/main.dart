@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/product.dart';
 import 'services/product_service.dart';
+import 'dart:ui';
 
 void main() {
   runApp(MyApp());
@@ -26,6 +27,8 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
+// REPLACE your existing _MainScreenState class with this one
+
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   final List<ArtisanProduct> _favorites = [];
@@ -33,36 +36,85 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      // The body is now a Stack to allow the nav bar to float on top
+      body: Stack(
         children: [
-          SwipeDemo(
-            onLike: (product) {
-              setState(() {
-                if (!_favorites.any((fav) => fav.id == product.id)) {
-                  _favorites.add(product);
-                }
-              });
-            },
+          // Your main screen content
+          IndexedStack(
+            index: _currentIndex,
+            children: [
+              SwipeDemo(
+                onLike: (product) {
+                  setState(() {
+                    if (!_favorites.any((fav) => fav.id == product.id)) {
+                      _favorites.add(product);
+                    }
+                  });
+                },
+              ),
+              const SearchScreen(),
+              FavoritesScreen(favorites: _favorites),
+              const ProfileScreen(),
+              const CartScreen(), // Added the 5th screen
+            ],
           ),
-          const SearchScreen(),
-          FavoritesScreen(favorites: _favorites),
-          const ProfileScreen(),
+          
+          // The custom frosted navigation bar
+          _buildFrostedNavBar(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        selectedItemColor: const Color(0xFF7D3C98),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favorites"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+    );
+  }
+
+  // Method to build the frosted navigation bar
+  Widget _buildFrostedNavBar() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+                color: Colors.white.withOpacity(0.20),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(Icons.home_outlined, 0),
+                  _buildNavItem(Icons.search, 1),
+                  _buildNavItem(Icons.favorite_border, 2, label: "Wishlist"),
+                  _buildNavItem(Icons.person_outline, 3),
+                  _buildNavItem(Icons.shopping_bag_outlined, 4),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  // Helper method to build each navigation icon
+  Widget _buildNavItem(IconData icon, int index, {String? label}) {
+    return IconButton(
+      icon: Icon(icon),
+      iconSize: 26,
+      color: _currentIndex == index ? Colors.white : Colors.white.withOpacity(0.6),
+      onPressed: () => setState(() => _currentIndex = index),
+      tooltip: label, // Optional: for accessibility
     );
   }
 }
@@ -683,6 +735,25 @@ class ProfileScreen extends StatelessWidget {
       ),
       body: const Center(
         child: Text("User Profile (Coming Soon)"),
+      ),
+    );
+  }
+}
+
+//--------------------------cart screen--------------------------
+
+class CartScreen extends StatelessWidget {
+  const CartScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Cart", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF7D3C98),
+      ),
+      body: const Center(
+        child: Text("Cart Screen (Coming Soon)"),
       ),
     );
   }
