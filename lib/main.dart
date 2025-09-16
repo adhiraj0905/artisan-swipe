@@ -88,14 +88,31 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 
   // Animation controllers
   late AnimationController _animationController;
+  // ignore: unused_field
   late Animation<Offset> _slideAnimation;
+  // ignore: unused_field
   late Animation<double> _scaleAnimation;
+  // ignore: unused_field
   late Animation<double> _rotationAnimation;
   
   // Drag variables
   Offset _cardOffset = Offset.zero;
   double _cardAngle = 0;
   bool _isDragging = false;
+
+  // Map product IDs to local asset paths (FROM CODE 1)
+  final Map<String, String> _productImagePaths = {
+    '1': 'assets/products/saree.jpg',
+    '2': 'assets/products/pottery.jpg',
+    '3': 'assets/products/elephant.jpg',
+    '4': 'assets/products/jewelry.jpg',
+    '5': 'assets/products/pashmina.jpg',
+    '6': 'assets/products/madhubani.jpg',
+    '7': 'assets/products/diya.jpg',
+    '8': 'assets/products/warli.jpg',
+    '9': 'assets/products/mojari.jpg',
+    '10': 'assets/products/bamboo.jpg',
+  };
 
   @override
   void initState() {
@@ -201,8 +218,8 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     _animateCard(Offset(400, 0), () {
       if (_currentIndex < _products.length) {
         final product = _products[_currentIndex];
-        widget.onLike(product);
-        _likedProductIds.add(product.id);
+        widget.onLike(product); // This still works
+        _likedProductIds.add(product.id); // This still works
       }
       _nextCard();
     });
@@ -324,25 +341,35 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 
     return SafeArea(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Card Stack
+          // Card Stack (VISUAL CHANGE FROM CODE 2)
           Expanded(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Next cards (background)
-                if (_currentIndex + 1 < _products.length)
-                  Transform.scale(
-                    scale: 0.95,
-                    child: _buildStaticCard(_products[_currentIndex + 1]),
+                // Furthest back card (3rd behind)
+                if (_currentIndex + 3 < _products.length)
+                  Transform.translate(
+                    offset: const Offset(0, -45),
+                    child: _buildStaticCard(_products[_currentIndex + 3]),
                   ),
+
+                // Middle card (2nd behind)
                 if (_currentIndex + 2 < _products.length)
-                  Transform.scale(
-                    scale: 0.9,
+                  Transform.translate(
+                    offset: const Offset(0, -30),
                     child: _buildStaticCard(_products[_currentIndex + 2]),
                   ),
-                
-                // Current card (foreground)
+
+                // Closest background card (1st behind)
+                if (_currentIndex + 1 < _products.length)
+                  Transform.translate(
+                    offset: const Offset(0, -15),
+                    child: _buildStaticCard(_products[_currentIndex + 1]),
+                  ),
+
+                // Front card (interactive)
                 if (_currentIndex < _products.length)
                   Transform.translate(
                     offset: _cardOffset,
@@ -362,28 +389,10 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
               ],
             ),
           ),
-
-          // Action Buttons
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                FloatingActionButton(
-                  onPressed: _swipeLeft,
-                  backgroundColor: Colors.red.withOpacity(0.9),
-                  heroTag: "pass",
-                  child: const Icon(Icons.close, color: Colors.white, size: 28),
-                ),
-                FloatingActionButton(
-                  onPressed: _swipeRight,
-                  backgroundColor: Colors.green.withOpacity(0.9),
-                  heroTag: "like",
-                  child: const Icon(Icons.favorite, color: Colors.white, size: 28),
-                ),
-              ],
-            ),
-          ),
+          
+          // Action Buttons (VISUAL CHANGE - REMOVED)
+          // The FloatingActionButtons from Code 1 have been removed
+          // as requested.
         ],
       ),
     );
@@ -423,16 +432,17 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
+  // (VISUAL CHANGE FROM CODE 2 - Dimensions and Shadow)
   Widget _buildStaticCard(ArtisanProduct product) {
     return Container(
-      width: 320,
-      height: 550,
+      width: 300,
+      height: 410,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: Colors.black.withOpacity(0.25),
             blurRadius: 10,
             offset: Offset(0, 5),
           ),
@@ -442,10 +452,11 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
+  // (VISUAL CHANGE FROM CODE 2 - Dimensions)
   Widget _buildProductCard(ArtisanProduct product) {
     return Container(
-      width: 320,
-      height: 550,
+      width: 300,
+      height: 410,
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 255, 255, 255),
         borderRadius: BorderRadius.circular(25),
@@ -474,147 +485,77 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
+  // (VISUAL CHANGE FROM CODE 2 - Layout, Padding)
+  // (MODIFIED to use Code 1's Image Logic)
   Widget _buildCardContent(ArtisanProduct product) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Product Image
-        Expanded(
-          flex: 3,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-            child: Stack(
-              children: [
-                // Main product image placeholder
-                Container(
-                  width: double.infinity,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image, size: 64, color: Colors.grey),
-                ),
-                
-                // Price badge
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7D3C98),
-                      borderRadius: BorderRadius.circular(20),
+        // Equal padding for top, left, and right sides of the image
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: AspectRatio(
+            aspectRatio: 1.0, // Square image
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey[200], // Placeholder background
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                // IMAGE LOGIC FROM CODE 1
+                child: _productImagePaths.containsKey(product.id)
+                  ? Image.asset(
+                      _productImagePaths[product.id]!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image, size: 64, color: Colors.grey),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image, size: 64, color: Colors.grey),
                     ),
-                    child: Text(
-                      product.formattedPrice,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                
-              ],
+              ),
             ),
           ),
         ),
-
-        // Product Details
+        
+        // Text section with center alignment
         Expanded(
-          flex: 2,
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Product title
+                // Product name (larger text)
                 Text(
                   product.title,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
+                  textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
                 ),
                 
                 const SizedBox(height: 8),
                 
-                // Artist info
-                Row(
-                  children: [
-                    
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            product.artist.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color.fromARGB(221, 75, 75, 75),
-                              
-                            ),
-                          ),
-                          Text(
-                            product.origin,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    
-                  ],
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Description of product(need to be changed)
-                Expanded(
-                  child: Text(
-                    product.shortDescription,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                      height: 1.3,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                // Artist name (smaller text)
+                Text(
+                  product.artist.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey,
                   ),
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Categories(idt this needs to be shown)
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: product.categories.take(3).map((category) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7D3C98).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF7D3C98).withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        category,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF7D3C98),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -647,7 +588,7 @@ class SearchScreen extends StatelessWidget {
 class FavoritesScreen extends StatelessWidget {
   final List<ArtisanProduct> favorites;
 
-  const FavoritesScreen({Key? key, required this.favorites}) : super(key: key);
+  FavoritesScreen({Key? key, required this.favorites}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -683,9 +624,26 @@ class FavoritesScreen extends StatelessWidget {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.grey,
-                      child: Icon(Icons.image, color: Colors.white),
+                    // We use the same image map logic here for consistency
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8.0),
+                      child: _productImagePaths.containsKey(product.id)
+                        ? Image.asset(
+                            _productImagePaths[product.id]!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const CircleAvatar(
+                                backgroundColor: Colors.grey,
+                                child: Icon(Icons.image, color: Colors.white),
+                              );
+                            },
+                          )
+                        : const CircleAvatar(
+                            backgroundColor: Colors.grey,
+                            child: Icon(Icons.image, color: Colors.white),
+                          ),
                     ),
                     title: Text(product.title),
                     subtitle: Text("by ${product.artist.name}"),
@@ -696,6 +654,20 @@ class FavoritesScreen extends StatelessWidget {
             ),
     );
   }
+
+  // Helper map for the favorites screen
+  final Map<String, String> _productImagePaths = {
+    '1': 'assets/products/saree.jpg',
+      '2': 'assets/products/pottery.jpg',
+      '3': 'assets/products/elephant.jpg',
+      '4': 'assets/products/jewelry.jpg',
+    '5': 'assets/products/pashmina.jpg',
+    '6': 'assets/products/madhubani.jpg',
+    '7': 'assets/products/diya.jpg',
+    '8': 'assets/products/warli.jpg',
+    '9': 'assets/products/mojari.jpg',
+    '10': 'assets/products/bamboo.jpg',
+  };
 }
 
 // ---------------------- PROFILE SCREEN ----------------------

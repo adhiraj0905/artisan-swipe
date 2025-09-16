@@ -1,327 +1,497 @@
-// services/product_service.dart
+// lib/services/product_service.dart
 
-import 'dart:async';
-import 'dart:math';
 import '../models/product.dart';
+import 'dart:math';
 
 class ProductService {
-  static final ProductService _instance = ProductService._internal();
-  factory ProductService() => _instance;
-  ProductService._internal();
-
-  // Simulate network delay
-  Future<void> _simulateNetworkDelay() async {
-    await Future.delayed(Duration(milliseconds: 500 + Random().nextInt(1000)));
-  }
-
-  // Sample artists data
-  static final List<Artist> _sampleArtists = [
-    Artist(
-      id: 'artist_1',
-      name: 'Ravi Kumar',
-      bio: 'Master potter from Khurja, specializing in traditional blue pottery and contemporary ceramic art. Third generation artisan carrying forward family traditions.',
-      profileImageUrl: 'assets/artists/ravi_kumar.jpg',
-      location: 'Khurja, Uttar Pradesh',
-      state: 'Uttar Pradesh',
-      specialties: ['Blue Pottery', 'Ceramics', 'Traditional Pottery'],
-      yearsOfExperience: 25,
-      rating: 4.8,
-      totalProducts: 45,
-      totalSales: 1200,
-      joinedDate: DateTime(2022, 3, 15),
-      isVerified: true,
-    ),
-    Artist(
-      id: 'artist_2',
-      name: 'Meera Sharma',
-      bio: 'Textile artist from Jaipur creating exquisite block-printed fabrics and traditional Rajasthani embroidery work with modern contemporary designs.',
-      profileImageUrl: 'assets/artists/meera_sharma.jpg',
-      location: 'Jaipur, Rajasthan',
-      state: 'Rajasthan',
-      specialties: ['Block Printing', 'Embroidery', 'Textile Design'],
-      yearsOfExperience: 18,
-      rating: 4.9,
-      totalProducts: 67,
-      totalSales: 2100,
-      joinedDate: DateTime(2021, 8, 20),
-      isVerified: true,
-    ),
-    Artist(
-      id: 'artist_3',
-      name: 'Arjun Patel',
-      bio: 'Wood craftsman from Gujarat specializing in intricate carved furniture and decorative wooden artifacts using traditional Gujarati techniques.',
-      profileImageUrl: 'assets/artists/arjun_patel.jpg',
-      location: 'Ahmedabad, Gujarat',
-      state: 'Gujarat',
-      specialties: ['Wood Carving', 'Furniture', 'Decorative Arts'],
-      yearsOfExperience: 22,
-      rating: 4.7,
-      totalProducts: 32,
-      totalSales: 800,
-      joinedDate: DateTime(2022, 1, 10),
-      isVerified: true,
-    ),
-    Artist(
-      id: 'artist_4',
-      name: 'Lakshmi Devi',
-      bio: 'Master weaver from Kerala creating traditional Kasavu sarees and contemporary handloom textiles with golden threads.',
-      profileImageUrl: 'assets/artists/lakshmi_devi.jpg',
-      location: 'Kochi, Kerala',
-      state: 'Kerala',
-      specialties: ['Handloom', 'Kasavu Sarees', 'Traditional Weaving'],
-      yearsOfExperience: 30,
-      rating: 4.9,
-      totalProducts: 28,
-      totalSales: 950,
-      joinedDate: DateTime(2021, 12, 5),
-      isVerified: true,
-    ),
-    Artist(
-      id: 'artist_5',
-      name: 'Suresh Chandra',
-      bio: 'Metal craft specialist from Moradabad, known for intricate brass work and contemporary metal sculptures combining traditional techniques.',
-      profileImageUrl: 'assets/artists/suresh_chandra.jpg',
-      location: 'Moradabad, Uttar Pradesh',
-      state: 'Uttar Pradesh',
-      specialties: ['Brass Work', 'Metal Craft', 'Sculptures'],
-      yearsOfExperience: 20,
-      rating: 4.6,
-      totalProducts: 38,
-      totalSales: 650,
-      joinedDate: DateTime(2022, 5, 18),
-      isVerified: false,
-    ),
-  ];
-
-  // Sample products data
-  static final List<ArtisanProduct> _sampleProducts = [
+  // Mock data - in a real app, this would come from your API
+  static final List<ArtisanProduct> _mockProducts = [
     ArtisanProduct(
-      id: 'product_1',
-      title: 'Blue Pottery Vase Set',
-      description: 'Handcrafted set of three ceramic vases in traditional Khurja blue pottery style. Each vase features intricate floral patterns and is perfect for modern home decor.',
-      price: 2500,
-      imageUrls: ['assets/products/blue_pottery_1.jpg', 'assets/products/blue_pottery_2.jpg'],
-      artist: _sampleArtists[0],
-      categories: ['Pottery', 'Home Decor', 'Ceramics'],
-      technique: 'Hand-thrown and painted',
-      dimensions: {'height': '25cm', 'width': '15cm', 'depth': '15cm'},
-      material: 'Ceramic clay, natural pigments',
-      createdAt: DateTime(2024, 8, 15),
+      id: '1',
+      title: 'Handwoven Banarasi Silk Saree',
+      description: 'Exquisite traditional Banarasi silk saree with intricate gold zari work. This masterpiece showcases the timeless art of Varanasi weavers, featuring traditional motifs and rich silk fabric that drapes beautifully.',
+      price: 18500,
+      imageUrls: ['https://example.com/saree1.jpg'],
+      artist: Artist(
+        id: 'artist1',
+        name: 'Rajesh Kumar Gupta',
+        bio: 'Master weaver from Varanasi with 25 years of experience in traditional silk weaving. His family has been preserving the ancient art of Banarasi weaving for four generations.',
+        profileImageUrl: 'https://example.com/rajesh.jpg',
+        location: 'Varanasi',
+        state: 'Uttar Pradesh',
+        specialties: ['Silk Weaving', 'Zari Work', 'Traditional Patterns'],
+        yearsOfExperience: 25,
+        rating: 4.8,
+        totalProducts: 45,
+        totalSales: 230,
+        joinedDate: DateTime(2020, 1, 15),
+        isVerified: true,
+        socialLinks: {'instagram': '@rajeshsilks', 'facebook': 'rajeshbanarasi'},
+        phoneNumber: '+91 9876543210',
+        email: 'rajesh@banarasisilks.com',
+      ),
+      categories: ['Textiles', 'Sarees', 'Silk', 'Wedding'],
+      technique: 'Hand Weaving with Zari',
+      dimensions: {'length': '6.5m', 'width': '1.2m', 'blouse': '1m'},
+      material: 'Pure Silk, Gold Zari',
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
       viewCount: 1250,
-      rating: 4.8,
-      reviewCount: 23,
-      tags: ['blue pottery', 'vase', 'home decor', 'traditional'],
-      origin: 'Khurja, Uttar Pradesh',
-    ),
-    ArtisanProduct(
-      id: 'product_2',
-      title: 'Block Printed Cotton Dupatta',
-      description: 'Elegant hand block-printed dupatta in vibrant Rajasthani style. Made with premium cotton and natural dyes, featuring traditional paisley and floral motifs.',
-      price: 1800,
-      imageUrls: ['assets/products/dupatta_1.jpg', 'assets/products/dupatta_2.jpg'],
-      artist: _sampleArtists[1],
-      categories: ['Textiles', 'Fashion', 'Handloom'],
-      technique: 'Hand block printing',
-      dimensions: {'length': '220cm', 'width': '100cm'},
-      material: 'Premium cotton, natural dyes',
-      createdAt: DateTime(2024, 9, 1),
-      viewCount: 890,
       rating: 4.9,
-      reviewCount: 31,
-      tags: ['block print', 'dupatta', 'cotton', 'rajasthani'],
+      reviewCount: 23,
+      tags: ['traditional', 'wedding', 'silk', 'handwoven', 'banarasi', 'zari'],
+      origin: 'Varanasi, Uttar Pradesh',
+    ),
+
+    ArtisanProduct(
+      id: '2',
+      title: 'Blue Pottery Decorative Vase',
+      description: 'Stunning blue pottery vase featuring traditional Jaipur patterns. Hand-painted with natural cobalt blue dye and fired in traditional kilns. Perfect as a centerpiece or gift.',
+      price: 3200,
+      imageUrls: ['https://example.com/pottery1.jpg'],
+      artist: Artist(
+        id: 'artist2',
+        name: 'Meera Devi Sharma',
+        bio: 'Renowned blue pottery artist from Jaipur, preserving the 400-year-old Mughal tradition. Award-winning craftswoman known for her intricate floral patterns.',
+        profileImageUrl: 'https://example.com/meera.jpg',
+        location: 'Jaipur',
+        state: 'Rajasthan',
+        specialties: ['Blue Pottery', 'Traditional Painting', 'Ceramic Art'],
+        yearsOfExperience: 15,
+        rating: 4.7,
+        totalProducts: 67,
+        totalSales: 340,
+        joinedDate: DateTime(2019, 6, 10),
+        isVerified: true,
+        socialLinks: {'instagram': '@meerabluepottery'},
+        phoneNumber: '+91 9876543211',
+        email: 'meera@bluepotteryjaipur.com',
+      ),
+      categories: ['Pottery', 'Home Decor', 'Ceramics', 'Art'],
+      technique: 'Blue Pottery',
+      dimensions: {'height': '25cm', 'diameter': '15cm', 'weight': '800g'},
+      material: 'Clay, Natural Cobalt Dye, Glaze',
+      createdAt: DateTime.now().subtract(const Duration(days: 12)),
+      viewCount: 890,
+      rating: 4.6,
+      reviewCount: 18,
+      tags: ['pottery', 'blue', 'jaipur', 'traditional', 'handpainted', 'home-decor'],
       origin: 'Jaipur, Rajasthan',
     ),
+
     ArtisanProduct(
-      id: 'product_3',
-      title: 'Carved Wooden Jewelry Box',
-      description: 'Intricately carved wooden jewelry box with traditional Gujarati motifs. Features multiple compartments and mirror inside. Perfect for storing precious accessories.',
-      price: 3200,
-      imageUrls: ['assets/products/wooden_box_1.jpg', 'assets/products/wooden_box_2.jpg'],
-      artist: _sampleArtists[2],
-      categories: ['Woodwork', 'Jewelry Box', 'Home Accessories'],
-      technique: 'Hand carving',
-      dimensions: {'height': '12cm', 'width': '25cm', 'depth': '18cm'},
-      material: 'Teak wood, brass fittings',
-      createdAt: DateTime(2024, 8, 28),
-      viewCount: 567,
-      rating: 4.7,
-      reviewCount: 18,
-      tags: ['wooden', 'carved', 'jewelry box', 'gujarati'],
-      origin: 'Ahmedabad, Gujarat',
+      id: '3',
+      title: 'Carved Sandalwood Elephant',
+      description: 'Intricately carved sandalwood elephant sculpture showcasing traditional South Indian woodworking. Every detail is hand-carved with precision, representing strength and prosperity.',
+      price: 7800,
+      imageUrls: ['https://example.com/elephant1.jpg'],
+      artist: Artist(
+        id: 'artist3',
+        name: 'K. Venkatesan',
+        bio: 'Master wood carver from Mysore, specializing in traditional temple art and animal sculptures. His work is displayed in temples across South India.',
+        profileImageUrl: 'https://example.com/venkat.jpg',
+        location: 'Mysore',
+        state: 'Karnataka',
+        specialties: ['Wood Carving', 'Temple Art', 'Animal Sculptures'],
+        yearsOfExperience: 28,
+        rating: 4.9,
+        totalProducts: 34,
+        totalSales: 156,
+        joinedDate: DateTime(2018, 3, 20),
+        isVerified: true,
+        socialLinks: {'website': 'mysorewoods.com'},
+        phoneNumber: '+91 9876543212',
+        email: 'venkat@mysorewoods.com',
+      ),
+      categories: ['Woodwork', 'Sculpture', 'Religious', 'Art'],
+      technique: 'Hand Carving',
+      dimensions: {'height': '20cm', 'length': '25cm', 'width': '12cm'},
+      material: 'Sandalwood',
+      createdAt: DateTime.now().subtract(const Duration(days: 8)),
+      viewCount: 1450,
+      rating: 4.8,
+      reviewCount: 31,
+      tags: ['woodcarving', 'elephant', 'sandalwood', 'traditional', 'sculpture'],
+      origin: 'Mysore, Karnataka',
     ),
+
     ArtisanProduct(
-      id: 'product_4',
-      title: 'Traditional Kasavu Saree',
-      description: 'Pure handloom Kasavu saree with golden border, woven in traditional Kerala style. Made with finest cotton threads and real gold zari work.',
-      price: 8500,
-      imageUrls: ['assets/products/kasavu_1.jpg', 'assets/products/kasavu_2.jpg'],
-      artist: _sampleArtists[3],
-      categories: ['Handloom', 'Saree', 'Traditional Wear'],
-      technique: 'Handloom weaving',
-      dimensions: {'length': '550cm', 'width': '120cm'},
-      material: 'Cotton, gold zari',
-      createdAt: DateTime(2024, 8, 10),
+      id: '4',
+      title: 'Kundan Meenakari Jewelry Set',
+      description: 'Royal Kundan jewelry set with exquisite Meenakari work. Includes necklace, earrings, and maang tikka. Perfect for weddings and special occasions.',
+      price: 25000,
+      imageUrls: ['https://example.com/jewelry1.jpg'],
+      artist: Artist(
+        id: 'artist4',
+        name: 'Ramesh Soni',
+        bio: 'Third-generation jeweler from Jaipur, specializing in Kundan and Meenakari work. His family workshop has been serving royal families for decades.',
+        profileImageUrl: 'https://example.com/ramesh.jpg',
+        location: 'Jaipur',
+        state: 'Rajasthan',
+        specialties: ['Kundan Jewelry', 'Meenakari', 'Traditional Goldsmithing'],
+        yearsOfExperience: 20,
+        rating: 4.9,
+        totalProducts: 28,
+        totalSales: 95,
+        joinedDate: DateTime(2021, 8, 5),
+        isVerified: true,
+        socialLinks: {'instagram': '@sonikundan'},
+        phoneNumber: '+91 9876543213',
+        email: 'ramesh@sonikunderajewels.com',
+      ),
+      categories: ['Jewelry', 'Wedding', 'Traditional', 'Kundan'],
+      technique: 'Kundan Setting with Meenakari',
+      dimensions: {'necklace': '40cm', 'earrings': '8cm', 'tikka': '12cm'},
+      material: 'Gold-plated Silver, Kundan, Meenakari Enamel',
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
       viewCount: 2100,
       rating: 4.9,
-      reviewCount: 45,
-      tags: ['kasavu', 'saree', 'handloom', 'kerala', 'gold'],
-      origin: 'Kochi, Kerala',
-    ),
-    ArtisanProduct(
-      id: 'product_5',
-      title: 'Brass Decorative Elephant',
-      description: 'Hand-engraved brass elephant sculpture with intricate traditional patterns. Brings good luck and prosperity according to Vastu shastra.',
-      price: 1500,
-      imageUrls: ['assets/products/brass_elephant_1.jpg', 'assets/products/brass_elephant_2.jpg'],
-      artist: _sampleArtists[4],
-      categories: ['Metal Craft', 'Sculpture', 'Home Decor'],
-      technique: 'Hand engraving on brass',
-      dimensions: {'height': '18cm', 'width': '22cm', 'depth': '10cm'},
-      material: 'Pure brass',
-      createdAt: DateTime(2024, 9, 5),
-      viewCount: 750,
-      rating: 4.6,
-      reviewCount: 12,
-      tags: ['brass', 'elephant', 'sculpture', 'home decor'],
-      origin: 'Moradabad, Uttar Pradesh',
-    ),
-    ArtisanProduct(
-      id: 'product_6',
-      title: 'Ceramic Tea Set - Blue & White',
-      description: 'Complete ceramic tea set with traditional blue and white patterns. Set includes teapot, 4 cups, saucers, and serving tray.',
-      price: 3800,
-      imageUrls: ['assets/products/tea_set_1.jpg', 'assets/products/tea_set_2.jpg'],
-      artist: _sampleArtists[0],
-      categories: ['Pottery', 'Ceramics', 'Kitchenware'],
-      technique: 'Ceramic molding and glazing',
-      dimensions: {'set': 'Complete tea service for 4'},
-      material: 'Ceramic, food-safe glaze',
-      createdAt: DateTime(2024, 8, 20),
-      viewCount: 1100,
-      rating: 4.8,
-      reviewCount: 27,
-      tags: ['ceramic', 'tea set', 'blue white', 'kitchenware'],
-      origin: 'Khurja, Uttar Pradesh',
-    ),
-    ArtisanProduct(
-      id: 'product_7',
-      title: 'Embroidered Wall Hanging',
-      description: 'Beautiful Rajasthani mirror work wall hanging with colorful embroidery. Features traditional motifs and adds vibrant touch to any room.',
-      price: 2200,
-      imageUrls: ['assets/products/wall_hanging_1.jpg', 'assets/products/wall_hanging_2.jpg'],
-      artist: _sampleArtists[1],
-      categories: ['Embroidery', 'Wall Art', 'Home Decor'],
-      technique: 'Mirror work and embroidery',
-      dimensions: {'height': '60cm', 'width': '40cm'},
-      material: 'Cotton fabric, mirrors, silk threads',
-      createdAt: DateTime(2024, 8, 25),
-      viewCount: 680,
-      rating: 4.7,
-      reviewCount: 21,
-      tags: ['embroidery', 'mirror work', 'wall hanging', 'rajasthani'],
+      reviewCount: 15,
+      tags: ['kundan', 'meenakari', 'jewelry', 'wedding', 'royal', 'traditional'],
       origin: 'Jaipur, Rajasthan',
+    ),
+
+    ArtisanProduct(
+      id: '5',
+      title: 'Kashmiri Pashmina Shawl',
+      description: 'Authentic handwoven Kashmiri Pashmina shawl with traditional paisley patterns. Made from the finest goat wool, incredibly soft and warm.',
+      price: 12000,
+      imageUrls: ['https://example.com/pashmina1.jpg'],
+      artist: Artist(
+        id: 'artist5',
+        name: 'Abdul Majeed',
+        bio: 'Master weaver from Kashmir, continuing the centuries-old tradition of Pashmina weaving. His shawls are known for their exceptional softness and intricate patterns.',
+        profileImageUrl: 'https://example.com/majeed.jpg',
+        location: 'Srinagar',
+        state: 'Jammu & Kashmir',
+        specialties: ['Pashmina Weaving', 'Traditional Patterns', 'Kashmiri Handicrafts'],
+        yearsOfExperience: 22,
+        rating: 4.8,
+        totalProducts: 52,
+        totalSales: 280,
+        joinedDate: DateTime(2019, 10, 12),
+        isVerified: true,
+        socialLinks: {'whatsapp': '+91 9876543214'},
+        phoneNumber: '+91 9876543214',
+        email: 'majeed@kashmiripashmina.com',
+      ),
+      categories: ['Textiles', 'Shawls', 'Pashmina', 'Winter Wear'],
+      technique: 'Hand Weaving',
+      dimensions: {'length': '200cm', 'width': '70cm', 'weight': '200g'},
+      material: 'Pure Pashmina Goat Wool',
+      createdAt: DateTime.now().subtract(const Duration(days: 15)),
+      viewCount: 1680,
+      rating: 4.7,
+      reviewCount: 42,
+      tags: ['pashmina', 'kashmir', 'handwoven', 'luxury', 'winter', 'shawl'],
+      origin: 'Srinagar, Kashmir',
+    ),
+
+    ArtisanProduct(
+      id: '6',
+      title: 'Madhubani Painting on Canvas',
+      description: 'Traditional Madhubani painting depicting nature and mythological themes. Hand-painted using natural colors on canvas, representing the folk art of Bihar.',
+      price: 4500,
+      imageUrls: ['https://example.com/madhubani1.jpg'],
+      artist: Artist(
+        id: 'artist6',
+        name: 'Sunita Kumari',
+        bio: 'Traditional Madhubani artist from Bihar, keeping alive the ancient art form passed down by her grandmother. Her paintings are exhibited in galleries across India.',
+        profileImageUrl: 'https://example.com/sunita.jpg',
+        location: 'Madhubani',
+        state: 'Bihar',
+        specialties: ['Madhubani Painting', 'Folk Art', 'Natural Colors'],
+        yearsOfExperience: 18,
+        rating: 4.6,
+        totalProducts: 89,
+        totalSales: 445,
+        joinedDate: DateTime(2020, 4, 22),
+        isVerified: true,
+        socialLinks: {'facebook': 'sunitamadhubani'},
+        phoneNumber: '+91 9876543215',
+        email: 'sunita@madhubaniart.com',
+      ),
+      categories: ['Paintings', 'Folk Art', 'Canvas Art', 'Traditional'],
+      technique: 'Hand Painting with Natural Colors',
+      dimensions: {'height': '40cm', 'width': '30cm', 'depth': '2cm'},
+      material: 'Canvas, Natural Pigments, Bamboo Brushes',
+      createdAt: DateTime.now().subtract(const Duration(days: 20)),
+      viewCount: 750,
+      rating: 4.5,
+      reviewCount: 28,
+      tags: ['madhubani', 'folk-art', 'painting', 'traditional', 'bihar', 'canvas'],
+      origin: 'Madhubani, Bihar',
+    ),
+
+    ArtisanProduct(
+      id: '7',
+      title: 'Brass Decorative Diya Set',
+      description: 'Handcrafted brass diyas with intricate engravings. Set of 6 traditional oil lamps perfect for festivals and home decoration.',
+      price: 1800,
+      imageUrls: ['https://example.com/diya1.jpg'],
+      artist: Artist(
+        id: 'artist7',
+        name: 'Prakash Thakkar',
+        bio: 'Skilled brass craftsman from Gujarat, specializing in traditional metalwork. His family has been creating brass items for temples and homes for three generations.',
+        profileImageUrl: 'https://example.com/prakash.jpg',
+        location: 'Ahmedabad',
+        state: 'Gujarat',
+        specialties: ['Brass Work', 'Metal Engraving', 'Traditional Crafts'],
+        yearsOfExperience: 16,
+        rating: 4.4,
+        totalProducts: 134,
+        totalSales: 567,
+        joinedDate: DateTime(2021, 1, 8),
+        isVerified: true,
+        socialLinks: {'instagram': '@brassworksguj'},
+        phoneNumber: '+91 9876543216',
+        email: 'prakash@gujaratbrass.com',
+      ),
+      categories: ['Metalwork', 'Home Decor', 'Religious', 'Festival'],
+      technique: 'Hand Engraving on Brass',
+      dimensions: {'diameter': '8cm', 'height': '3cm', 'set': '6 pieces'},
+      material: 'Pure Brass',
+      createdAt: DateTime.now().subtract(const Duration(days: 7)),
+      viewCount: 920,
+      rating: 4.3,
+      reviewCount: 35,
+      tags: ['brass', 'diya', 'festival', 'traditional', 'home-decor', 'handcrafted'],
+      origin: 'Ahmedabad, Gujarat',
+    ),
+
+    ArtisanProduct(
+      id: '8',
+      title: 'Warli Art Tribal Painting',
+      description: 'Authentic Warli tribal art painting depicting village life and harvest celebrations. Created using traditional white pigment on dark background.',
+      price: 3800,
+      imageUrls: ['https://example.com/warli1.jpg'],
+      artist: Artist(
+        id: 'artist8',
+        name: 'Vandana Masram',
+        bio: 'Warli tribal artist from Maharashtra, preserving the ancient art form of her ancestors. Her paintings tell stories of tribal life and traditions.',
+        profileImageUrl: 'https://example.com/vandana.jpg',
+        location: 'Dahanu',
+        state: 'Maharashtra',
+        specialties: ['Warli Art', 'Tribal Painting', 'Traditional Stories'],
+        yearsOfExperience: 12,
+        rating: 4.7,
+        totalProducts: 76,
+        totalSales: 289,
+        joinedDate: DateTime(2022, 3, 15),
+        isVerified: true,
+        socialLinks: {'facebook': 'warliartbyvandana'},
+        phoneNumber: '+91 9876543217',
+        email: 'vandana@warliart.com',
+      ),
+      categories: ['Paintings', 'Tribal Art', 'Folk Art', 'Wall Art'],
+      technique: 'Traditional Warli Painting',
+      dimensions: {'height': '35cm', 'width': '25cm', 'depth': '1.5cm'},
+      material: 'Natural White Pigment, Dark Paper, Bamboo Stick',
+      createdAt: DateTime.now().subtract(const Duration(days: 11)),
+      viewCount: 650,
+      rating: 4.6,
+      reviewCount: 22,
+      tags: ['warli', 'tribal', 'folk-art', 'traditional', 'maharashtra', 'village-life'],
+      origin: 'Dahanu, Maharashtra',
+    ),
+
+    ArtisanProduct(
+      id: '9',
+      title: 'Leather Mojari Shoes',
+      description: 'Traditional handcrafted leather mojaris with colorful thread work. Comfortable ethnic footwear perfect for festivals and traditional occasions.',
+      price: 2200,
+      imageUrls: ['https://example.com/mojari1.jpg'],
+      artist: Artist(
+        id: 'artist9',
+        name: 'Suresh Choudhary',
+        bio: 'Master cobbler from Rajasthan, specializing in traditional mojari and jutis. His craftsmanship combines comfort with authentic Rajasthani designs.',
+        profileImageUrl: 'https://example.com/suresh.jpg',
+        location: 'Jodhpur',
+        state: 'Rajasthan',
+        specialties: ['Leather Craft', 'Traditional Footwear', 'Embroidery'],
+        yearsOfExperience: 19,
+        rating: 4.5,
+        totalProducts: 98,
+        totalSales: 412,
+        joinedDate: DateTime(2020, 9, 30),
+        isVerified: true,
+        socialLinks: {'whatsapp': '+91 9876543218'},
+        phoneNumber: '+91 9876543218',
+        email: 'suresh@rajasthanifootwear.com',
+      ),
+      categories: ['Leather', 'Footwear', 'Traditional', 'Fashion'],
+      technique: 'Hand Stitching with Thread Embroidery',
+      dimensions: {'sizes': '6-11', 'length': '28cm', 'width': '10cm'},
+      material: 'Genuine Leather, Cotton Thread, Rubber Sole',
+      createdAt: DateTime.now().subtract(const Duration(days: 6)),
+      viewCount: 1120,
+      rating: 4.4,
+      reviewCount: 48,
+      tags: ['mojari', 'leather', 'traditional', 'footwear', 'rajasthan', 'handcrafted'],
+      origin: 'Jodhpur, Rajasthan',
+    ),
+
+    ArtisanProduct(
+      id: '10',
+      title: 'Bamboo Basket with Lid',
+      description: 'Eco-friendly bamboo basket with intricate weaving patterns. Perfect for storage and home organization while adding a natural touch to your decor.',
+      price: 850,
+      imageUrls: ['https://example.com/bamboo1.jpg'],
+      artist: Artist(
+        id: 'artist10',
+        name: 'Ravi Nath',
+        bio: 'Bamboo craftsman from Assam, creating sustainable and beautiful bamboo products. His work promotes eco-friendly living while preserving traditional weaving techniques.',
+        profileImageUrl: 'https://example.com/ravi.jpg',
+        location: 'Guwahati',
+        state: 'Assam',
+        specialties: ['Bamboo Craft', 'Weaving', 'Eco Products'],
+        yearsOfExperience: 14,
+        rating: 4.3,
+        totalProducts: 156,
+        totalSales: 623,
+        joinedDate: DateTime(2021, 5, 18),
+        isVerified: false,
+        socialLinks: {'instagram': '@bamboocraft_assam'},
+        phoneNumber: '+91 9876543219',
+        email: 'ravi@bamboocraft.com',
+      ),
+      categories: ['Basketry', 'Home Decor', 'Storage', 'Eco-Friendly'],
+      technique: 'Traditional Bamboo Weaving',
+      dimensions: {'diameter': '30cm', 'height': '25cm', 'lid': 'included'},
+      material: 'Natural Bamboo, Cotton Thread',
+      createdAt: DateTime.now().subtract(const Duration(days: 18)),
+      viewCount: 430,
+      rating: 4.2,
+      reviewCount: 19,
+      tags: ['bamboo', 'basket', 'eco-friendly', 'storage', 'handwoven', 'natural'],
+      origin: 'Guwahati, Assam',
     ),
   ];
 
-  // Get all products
+  // Simulate API delay for realistic experience
+  Future<void> _simulateNetworkDelay() async {
+    await Future.delayed(Duration(milliseconds: 800 + Random().nextInt(400)));
+  }
+
+  // Get all products (for initial load)
   Future<List<ArtisanProduct>> getAllProducts() async {
     await _simulateNetworkDelay();
-    // Shuffle to simulate dynamic content
-    final shuffled = List<ArtisanProduct>.from(_sampleProducts);
+    
+    // Shuffle the list to show different products each time
+    var shuffled = List<ArtisanProduct>.from(_mockProducts);
     shuffled.shuffle();
     return shuffled;
+  }
+
+  // Get recommended products based on liked items
+  Future<List<ArtisanProduct>> getRecommendedProducts(List<String> likedProductIds) async {
+    await _simulateNetworkDelay();
+    
+    if (likedProductIds.isEmpty) {
+      return getAllProducts();
+    }
+
+    // Simple recommendation algorithm
+    // Find categories and tags from liked products
+    Set<String> preferredCategories = {};
+    Set<String> preferredTags = {};
+    
+    for (String likedId in likedProductIds) {
+      var likedProduct = _mockProducts.firstWhere((p) => p.id == likedId);
+      preferredCategories.addAll(likedProduct.categories);
+      preferredTags.addAll(likedProduct.tags);
+    }
+
+    // Score products based on category and tag matches
+    var scoredProducts = _mockProducts
+        .where((product) => !likedProductIds.contains(product.id))
+        .map((product) {
+          int score = 0;
+          
+          // Category matches
+          for (String category in product.categories) {
+            if (preferredCategories.contains(category)) score += 3;
+          }
+          
+          // Tag matches
+          for (String tag in product.tags) {
+            if (preferredTags.contains(tag)) score += 1;
+          }
+          
+          // Same state bonus
+          var likedStates = _mockProducts
+              .where((p) => likedProductIds.contains(p.id))
+              .map((p) => p.artist.state)
+              .toSet();
+          if (likedStates.contains(product.artist.state)) score += 2;
+          
+          return MapEntry(product, score);
+        })
+        .toList();
+
+    // Sort by score (descending) and return
+    scoredProducts.sort((a, b) => b.value.compareTo(a.value));
+    return scoredProducts.map((entry) => entry.key).toList();
+  }
+
+  // Search products by query
+  Future<List<ArtisanProduct>> searchProducts(String query) async {
+    await _simulateNetworkDelay();
+    
+    if (query.isEmpty) return [];
+    
+    String lowerQuery = query.toLowerCase();
+    
+    return _mockProducts.where((product) {
+      return product.title.toLowerCase().contains(lowerQuery) ||
+             product.description.toLowerCase().contains(lowerQuery) ||
+             product.categories.any((cat) => cat.toLowerCase().contains(lowerQuery)) ||
+             product.tags.any((tag) => tag.toLowerCase().contains(lowerQuery)) ||
+             product.artist.name.toLowerCase().contains(lowerQuery) ||
+             product.origin.toLowerCase().contains(lowerQuery) ||
+             product.material.toLowerCase().contains(lowerQuery);
+    }).toList();
   }
 
   // Get products by category
   Future<List<ArtisanProduct>> getProductsByCategory(String category) async {
     await _simulateNetworkDelay();
-    return _sampleProducts
-        .where((product) => product.categories.contains(category))
-        .toList();
-  }
-
-  // Search products
-  Future<List<ArtisanProduct>> searchProducts(String query) async {
-    await _simulateNetworkDelay();
-    final lowercaseQuery = query.toLowerCase();
     
-    return _sampleProducts.where((product) {
-      return product.title.toLowerCase().contains(lowercaseQuery) ||
-             product.description.toLowerCase().contains(lowercaseQuery) ||
-             product.tags.any((tag) => tag.toLowerCase().contains(lowercaseQuery)) ||
-             product.artist.name.toLowerCase().contains(lowercaseQuery) ||
-             product.categories.any((cat) => cat.toLowerCase().contains(lowercaseQuery));
+    return _mockProducts.where((product) {
+      return product.categories.any((cat) => 
+        cat.toLowerCase() == category.toLowerCase());
     }).toList();
   }
 
-  // Get recommended products (basic implementation)
-  Future<List<ArtisanProduct>> getRecommendedProducts(List<String> likedProductIds) async {
+  // Get products by artist
+  Future<List<ArtisanProduct>> getProductsByArtist(String artistId) async {
     await _simulateNetworkDelay();
     
-    if (likedProductIds.isEmpty) {
-      // Return popular/highly rated products
-      final popular = _sampleProducts.where((p) => p.isPopular || p.isHighlyRated).toList();
-      popular.shuffle();
-      return popular.take(10).toList();
-    }
-
-    // Find liked products and their categories
-    final likedProducts = _sampleProducts
-        .where((p) => likedProductIds.contains(p.id))
-        .toList();
-    
-    final likedCategories = <String>{};
-    final likedArtists = <String>{};
-    
-    for (final product in likedProducts) {
-      likedCategories.addAll(product.categories);
-      likedArtists.add(product.artist.id);
-    }
-
-    // Find similar products
-    final recommendations = _sampleProducts.where((product) {
-      if (likedProductIds.contains(product.id)) return false;
-      
-      // Score based on category match
-      final categoryMatch = product.categories.any((cat) => likedCategories.contains(cat));
-      // Score based on same artist
-      final artistMatch = likedArtists.contains(product.artist.id);
-      
-      return categoryMatch || artistMatch;
-    }).toList();
-
-    // Sort by rating and popularity
-    recommendations.sort((a, b) {
-      final scoreA = (a.rating * 0.7) + (a.isPopular ? 0.3 : 0);
-      final scoreB = (b.rating * 0.7) + (b.isPopular ? 0.3 : 0);
-      return scoreB.compareTo(scoreA);
-    });
-
-    return recommendations.take(10).toList();
+    return _mockProducts.where((product) => 
+      product.artist.id == artistId).toList();
   }
 
-  // Get product by ID
-  Future<ArtisanProduct?> getProductById(String id) async {
+  // Get single product by ID
+  Future<ArtisanProduct?> getProductById(String productId) async {
     await _simulateNetworkDelay();
+    
     try {
-      return _sampleProducts.firstWhere((product) => product.id == id);
+      return _mockProducts.firstWhere((product) => product.id == productId);
     } catch (e) {
       return null;
     }
   }
 
-  // Get all categories
-  List<String> getAllCategories() {
-    final categories = <String>{};
-    for (final product in _sampleProducts) {
-      categories.addAll(product.categories);
-    }
-    return categories.toList()..sort();
-  }
-
-  // Simulate API error for testing
-  Future<List<ArtisanProduct>> getProductsWithError() async {
+  // Get trending products (high rating + high views)
+  Future<List<ArtisanProduct>> getTrendingProducts() async {
     await _simulateNetworkDelay();
-    throw Exception('Network error: Unable to fetch products');
+    
+    var trending = List<ArtisanProduct>.from(_mockProducts);
+    trending.sort((a, b) {
+      double scoreA = (a.rating * 0.7) + (a.viewCount / 1000 * 0.3);
+      double scoreB = (b.rating * 0.7) + (b.viewCount / 1000 * 0.3);
+      return scoreB.compareTo(scoreA);
+    });
+    
+    return trending.take(5).toList();
   }
 }
