@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models/product.dart';
 import 'services/product_service.dart';
 import 'dart:ui';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(MyApp());
@@ -395,6 +396,19 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+              Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24.0),
+            child: Text(
+              'OPELITH',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cinzel( // Use the Google Fonts style
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 3,
+              ),
+            ),
+          ),
           // Card Stack (VISUAL CHANGE FROM CODE 2)
           Expanded(
             child: Stack(
