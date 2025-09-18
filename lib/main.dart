@@ -3,9 +3,10 @@ import 'models/product.dart';
 import 'services/product_service.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -13,14 +14,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: MainScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
+// ---------------------- DATA MODELS ----------------------
+
+class CartItem {
+  final ArtisanProduct product;
+  int quantity;
+
+  CartItem({required this.product, this.quantity = 1});
+}
+
 // ---------------------- MAIN SCREEN ----------------------
+
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
 
@@ -28,19 +39,118 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
-// REPLACE your existing _MainScreenState class with this one
-
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   final List<ArtisanProduct> _favorites = [];
+  final List<CartItem> _cartItems = [];
+
+  bool _showNotification = false;
+  String _notificationMessage = '';
+  Timer? _notificationTimer;
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel(); // Cancel timer to prevent memory leaks
+    super.dispose();
+  }
+
+  void _showCustomNotification(String message) {
+    // If a timer is already active, cancel it
+    _notificationTimer?.cancel();
+
+    setState(() {
+      _notificationMessage = message;
+      _showNotification = true;
+    });
+
+    // Set a timer to hide the notification after 3 seconds
+    _notificationTimer = Timer(const Duration(seconds: 3), () {
+      setState(() {
+        _showNotification = false;
+      });
+    });
+  }
+
+  void _removeFromWishlist(ArtisanProduct product) {
+    setState(() {
+      _favorites.removeWhere((item) => item.id == product.id);
+    });
+  }
+
+  void _addToCart(ArtisanProduct product) {
+    setState(() {
+      // Logic to add the item to the cart (you already have this)
+      final existingItemIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
+      if (existingItemIndex != -1) {
+        _cartItems[existingItemIndex].quantity++;
+      } else {
+        _cartItems.add(CartItem(product: product));
+      }
+      
+      // --- ADD THIS LINE ---
+      // Remove the same item from the favorites list
+      _favorites.removeWhere((item) => item.id == product.id);
+      
+
+      // Show a confirmation message
+      _showCustomNotification('${product.title} added to bag.');
+    });
+  }
+
+  Widget _buildCustomNotification() {
+  // Use AnimatedPositioned to slide the widget up from the bottom
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+      // Position it above the nav bar when shown, or hidden below the screen
+      bottom: _showNotification ? 80.0 : -100.0,
+      left: 12,
+      right: 12,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.green.withOpacity(0.4)),
+              ),
+              child: Text(
+                _notificationMessage,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _updateItemQuantity(CartItem item, int change) {
+    setState(() {
+      item.quantity += change;
+      if (item.quantity <= 0) {
+        _cartItems.remove(item);
+      }
+    });
+  }
+
+  void _navigateToHome() {
+    setState(() {
+      _currentIndex = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The body is now a Stack to allow the nav bar to float on top
       body: Stack(
         children: [
-          // Your main screen content
           IndexedStack(
             index: _currentIndex,
             children: [
@@ -53,87 +163,98 @@ class _MainScreenState extends State<MainScreen> {
                   });
                 },
               ),
-              SearchScreen(onNavigateHome: _navigateToHome), 
-              FavoritesScreen(favorites: _favorites),
+              SearchScreen(onNavigateHome: _navigateToHome),
+              WishlistScreen(
+                favorites: _favorites,
+                onRemoveFromWishlist: _removeFromWishlist,
+                onAddToCart: _addToCart,
+              ),
               const ProfileScreen(),
-              const CartScreen(), // Added the 5th screen
+              CartScreen(
+                cartItems: _cartItems,
+                onUpdateQuantity: _updateItemQuantity,
+                onMoveToWishlist: _moveToWishlist,
+              ),
             ],
           ),
-          
-          // The custom frosted navigation bar
           _buildFrostedNavBar(),
+          _buildCustomNotification(), // Add the custom notification widget
         ],
       ),
     );
   }
 
-  // Method to build the frosted navigation bar
   Widget _buildFrostedNavBar() {
-  // Check if the keyboard is visible by looking at the bottom inset
-  final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-
-  // If the keyboard is open, return an empty, zero-sized widget
-  if (isKeyboardOpen) {
-    return const SizedBox.shrink();
-  }
-
-  // Otherwise, build and return the navigation bar as usual
-  return Align(
-    alignment: Alignment.bottomCenter,
-    child: Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-              color: Colors.white.withOpacity(0.20),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.25)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(Icons.home_outlined, 0),
-                _buildNavItem(Icons.search, 1),
-                _buildNavItem(Icons.favorite_border, 2, label: "Wishlist"),
-                _buildNavItem(Icons.person_outline, 3),
-                _buildNavItem(Icons.shopping_bag_outlined, 4),
-              ],
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    if (isKeyboardOpen) {
+      return const SizedBox.shrink();
+    }
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+                color: Colors.white.withOpacity(0.20),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(Icons.home_outlined, 0),
+                  _buildNavItem(Icons.search, 1),
+                  _buildNavItem(Icons.favorite_border, 2, label: "Wishlist"),
+                  _buildNavItem(Icons.person_outline, 3),
+                  _buildNavItem(Icons.shopping_bag_outlined, 4),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  // Helper method to build each navigation icon
   Widget _buildNavItem(IconData icon, int index, {String? label}) {
     return IconButton(
       icon: Icon(icon),
       iconSize: 26,
-      color: _currentIndex == index ? Colors.white : Colors.white.withOpacity(0.6),
+      color: _currentIndex == index
+          ? Colors.white
+          : Colors.white.withOpacity(0.6),
       onPressed: () => setState(() => _currentIndex = index),
-      tooltip: label, // Optional: for accessibility
+      tooltip: label,
     );
   }
 
-  void _navigateToHome() {
-  setState(() {
-    _currentIndex = 0;
-  });
- }
+  void _moveToWishlist(CartItem cartItem) {
+    setState(() {
+      // Add to favorites if it's not already there
+      if (!_favorites.any((product) => product.id == cartItem.product.id)) {
+        _favorites.add(cartItem.product);
+      }
+      // Remove from cart
+      _cartItems.remove(cartItem);
+    });
+  }
+
+  
 }
+
+
 
 // ---------------------- SWIPE DEMO ----------------------
 class SwipeDemo extends StatefulWidget {
@@ -156,11 +277,8 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 
   // Animation controllers
   late AnimationController _animationController;
-  // ignore: unused_field
   late Animation<Offset> _slideAnimation;
-  // ignore: unused_field
   late Animation<double> _scaleAnimation;
-  // ignore: unused_field
   late Animation<double> _rotationAnimation;
   
   // Drag variables
@@ -168,7 +286,6 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
   double _cardAngle = 0;
   bool _isDragging = false;
 
-  // Map product IDs to local asset paths (FROM CODE 1)
   final Map<String, String> _productImagePaths = {
     '1': 'assets/products/saree.jpg',
     '2': 'assets/products/pottery.jpg',
@@ -265,7 +382,6 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
       _isDragging = false;
     });
 
-    // Check if card was swiped far enough
     if (_cardOffset.dx.abs() > 100) {
       if (_cardOffset.dx > 0) {
         _swipeRight();
@@ -273,7 +389,6 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
         _swipeLeft();
       }
     } else {
-      // Animate back to center
       setState(() {
         _cardOffset = Offset.zero;
         _cardAngle = 0;
@@ -282,20 +397,18 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
   }
 
   void _swipeRight() {
-    // Like animation
-    _animateCard(Offset(400, 0), () {
+    _animateCard(const Offset(400, 0), () {
       if (_currentIndex < _products.length) {
         final product = _products[_currentIndex];
-        widget.onLike(product); // This still works
-        _likedProductIds.add(product.id); // This still works
+        widget.onLike(product);
+        _likedProductIds.add(product.id);
       }
       _nextCard();
     });
   }
 
   void _swipeLeft() {
-    // Pass animation
-    _animateCard(Offset(-400, 0), () {
+    _animateCard(const Offset(-400, 0), () {
       _nextCard();
     });
   }
@@ -411,12 +524,12 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-              Padding(
+          Padding(
             padding: const EdgeInsets.symmetric(vertical: 24.0),
             child: Text(
-              'OPELITH',
+              'OPLETH',
               textAlign: TextAlign.center,
-              style: GoogleFonts.cinzel( // Use the Google Fonts style
+              style: GoogleFonts.cinzel(
                 color: Colors.white,
                 fontSize: 28,
                 fontWeight: FontWeight.w300,
@@ -424,33 +537,25 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // Card Stack (VISUAL CHANGE FROM CODE 2)
           Expanded(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Furthest back card (3rd behind)
                 if (_currentIndex + 3 < _products.length)
                   Transform.translate(
                     offset: const Offset(0, -45),
                     child: _buildStaticCard(_products[_currentIndex + 3]),
                   ),
-
-                // Middle card (2nd behind)
                 if (_currentIndex + 2 < _products.length)
                   Transform.translate(
                     offset: const Offset(0, -30),
                     child: _buildStaticCard(_products[_currentIndex + 2]),
                   ),
-
-                // Closest background card (1st behind)
                 if (_currentIndex + 1 < _products.length)
                   Transform.translate(
                     offset: const Offset(0, -15),
                     child: _buildStaticCard(_products[_currentIndex + 1]),
                   ),
-
-                // Front card (interactive)
                 if (_currentIndex < _products.length)
                   Transform.translate(
                     offset: _cardOffset,
@@ -470,10 +575,6 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
               ],
             ),
           ),
-          
-          // Action Buttons (VISUAL CHANGE - REMOVED)
-          // The FloatingActionButtons from Code 1 have been removed
-          // as requested.
         ],
       ),
     );
@@ -485,11 +586,9 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 
     if (_isDragging && _cardOffset.dx.abs() > 50) {
       if (_cardOffset.dx > 0) {
-        // Swiping right - green glow
         glowColor = Colors.green;
         glowIntensity = (_cardOffset.dx / 200).clamp(0.0, 1.0);
       } else {
-        // Swiping left - red glow
         glowColor = Colors.red;
         glowIntensity = (_cardOffset.dx.abs() / 200).clamp(0.0, 1.0);
       }
@@ -513,7 +612,6 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
-  // (VISUAL CHANGE FROM CODE 2 - Dimensions and Shadow)
   Widget _buildStaticCard(ArtisanProduct product) {
     return Container(
       width: 300,
@@ -525,7 +623,7 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
           BoxShadow(
             color: Colors.black.withOpacity(0.25),
             blurRadius: 10,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -533,7 +631,6 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
-  // (VISUAL CHANGE FROM CODE 2 - Dimensions)
   Widget _buildProductCard(ArtisanProduct product) {
     return Container(
       width: 300,
@@ -545,13 +642,12 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
       child: Stack(
         children: [
           _buildCardContent(product),
-          
-          // Overlay for swipe feedback
           if (_isDragging && _cardOffset.dx.abs() > 50)
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(25),
-                color: (_cardOffset.dx > 0 ? Colors.green : Colors.red).withOpacity(0.2),
+                color: (_cardOffset.dx > 0 ? Colors.green : Colors.red)
+                    .withOpacity(0.2),
               ),
               child: Center(
                 child: Icon(
@@ -566,52 +662,47 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
-  // (VISUAL CHANGE FROM CODE 2 - Layout, Padding)
-  // (MODIFIED to use Code 1's Image Logic)
   Widget _buildCardContent(ArtisanProduct product) {
     return Column(
       children: [
-        // Equal padding for top, left, and right sides of the image
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: AspectRatio(
-            aspectRatio: 1.0, // Square image
+            aspectRatio: 1.0,
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey[200], // Placeholder background
+                color: Colors.grey[200],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                // IMAGE LOGIC FROM CODE 1
                 child: _productImagePaths.containsKey(product.id)
-                  ? Image.asset(
-                      _productImagePaths[product.id]!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image, size: 64, color: Colors.grey),
-                        );
-                      },
-                    )
-                  : Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image, size: 64, color: Colors.grey),
-                    ),
+                    ? Image.asset(
+                        _productImagePaths[product.id]!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image,
+                                size: 64, color: Colors.grey),
+                          );
+                        },
+                      )
+                    : Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image,
+                            size: 64, color: Colors.grey),
+                      ),
               ),
             ),
           ),
         ),
-        
-        // Text section with center alignment
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Product name (larger text)
                 Text(
                   product.title,
                   style: const TextStyle(
@@ -623,10 +714,7 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                
                 const SizedBox(height: 8),
-                
-                // Artist name (smaller text)
                 Text(
                   product.artist.name,
                   style: const TextStyle(
@@ -648,12 +736,8 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 }
 
 // ---------------------- SEARCH SCREEN ----------------------
-// REPLACE your old SearchScreen StatelessWidget with this entire class
-
 class SearchScreen extends StatefulWidget {
-  final VoidCallback onNavigateHome; // 1. Add this line
-
-  // 2. Update the constructor
+  final VoidCallback onNavigateHome;
   const SearchScreen({Key? key, required this.onNavigateHome}) : super(key: key);
 
   @override
@@ -665,7 +749,6 @@ class _SearchScreenState extends State<SearchScreen> {
   final _focusNode = FocusNode();
   bool _isSearching = false;
 
-  // --- Mock Data (replace with your actual data later) ---
   final List<String> _categories = [
     'Painting', 'Drawing', 'Sculpture', 'Printmaking', 
     'Photograph', 'Digital Art', 'Glass Work'
@@ -676,7 +759,6 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen to focus changes to toggle between the two views
     _focusNode.addListener(() {
       setState(() {
         _isSearching = _focusNode.hasFocus;
@@ -691,104 +773,86 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // --- Main Build Method ---
-  // In _SearchScreenState, update the main build method
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
 
-@override
-Widget build(BuildContext context) {
-  // Use PopScope to control the back button behavior
-  return PopScope(
-  canPop: false, // We will handle all back presses manually
-  onPopInvoked: (didPop) {
-    if (didPop) return;
-
-    if (_isSearching) {
-      // If searching, just unfocus to return to categories
-      setState(() {
-        _focusNode.unfocus();
-      });
-    } else {
-      // Otherwise, call the function to navigate to the Home screen
-      widget.onNavigateHome();
-    }
-  },
-    child: Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: () => _focusNode.unfocus(),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSearchBar(),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: _isSearching
-                      ? _buildActiveSearchView()
-                      : _buildCategoriesView(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-  // --- UI Helper Methods ---
-
-  // In _SearchScreenState, replace the old _buildSearchBar method
-
-Widget _buildSearchBar() {
-  return Padding(
-    padding: const EdgeInsets.only(top: 20.0),
-    child: Row(
-      children: [
-        // The TextField now expands to fill the available space
-        Expanded(
-          child: TextField(
-            controller: _searchController,
-            focusNode: _focusNode,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.grey[900],
-              hintText: 'Search',
-              hintStyle: TextStyle(color: Colors.grey[600]),
-              
-              // 1. Change the prefix icon to the search icon
-              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-              
-              // 2. Remove the suffixIcon property entirely
-              // suffixIcon: Icon(Icons.search, color: Colors.grey[600]),
-
-              contentPadding: const EdgeInsets.symmetric(vertical: 15),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-                borderSide: BorderSide.none,
+        if (_isSearching) {
+          setState(() {
+            _focusNode.unfocus();
+          });
+        } else {
+          widget.onNavigateHome();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: GestureDetector(
+          onTap: () => _focusNode.unfocus(),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSearchBar(),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: _isSearching
+                        ? _buildActiveSearchView()
+                        : _buildCategoriesView(),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-        // This 'X' button only appears when the user is searching
-        if (_isSearching)
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-                _searchController.clear();
-                _focusNode.unfocus();
-              },
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.grey[900],
+                hintText: 'Search',
+                hintStyle: TextStyle(color: Colors.grey[600]),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
           ),
-      ],
-    ),
-  );
-}
+          if (_isSearching)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () {
+                  _searchController.clear();
+                  _focusNode.unfocus();
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildCategoriesView() {
     return Column(
@@ -798,7 +862,11 @@ Widget _buildSearchBar() {
         const SizedBox(height: 20),
         const Text(
           'CATEGORIES',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2),
         ),
         const SizedBox(height: 10),
         Expanded(
@@ -807,10 +875,11 @@ Widget _buildSearchBar() {
             itemBuilder: (context, index) {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(_categories[index], style: const TextStyle(color: Colors.white, fontSize: 16)),
-                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                title: Text(_categories[index],
+                    style: const TextStyle(color: Colors.white, fontSize: 16)),
+                trailing: const Icon(Icons.arrow_forward_ios,
+                    color: Colors.white, size: 16),
                 onTap: () {
-                  // TODO: Implement navigation to category results page
                   print('Tapped on ${_categories[index]}');
                 },
               );
@@ -825,14 +894,13 @@ Widget _buildSearchBar() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- Search History Section ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('SEARCH HISTORY', style: TextStyle(color: Colors.grey, fontSize: 14)),
+            const Text('SEARCH HISTORY',
+                style: TextStyle(color: Colors.grey, fontSize: 14)),
             TextButton(
               onPressed: () {
-                // TODO: Implement clear history logic
                 setState(() {
                   _searchHistory.clear();
                 });
@@ -841,96 +909,41 @@ Widget _buildSearchBar() {
             ),
           ],
         ),
-        ..._searchHistory.map((term) => Text(term, style: const TextStyle(color: Colors.white, fontSize: 16))).toList(),
-        
+        ..._searchHistory
+            .map((term) =>
+                Text(term, style: const TextStyle(color: Colors.white, fontSize: 16)))
+            .toList(),
         const SizedBox(height: 30),
-
-        // --- Popular Searches Section ---
-        const Text('POPULAR SEARCHES', style: TextStyle(color: Colors.grey, fontSize: 14)),
+        const Text('POPULAR SEARCHES',
+            style: TextStyle(color: Colors.grey, fontSize: 14)),
         const SizedBox(height: 10),
-        ..._popularSearches.map((term) => Text(term, style: const TextStyle(color: Colors.white, fontSize: 16))).toList(),
+        ..._popularSearches
+            .map((term) =>
+                Text(term, style: const TextStyle(color: Colors.white, fontSize: 16)))
+            .toList(),
       ],
     );
   }
 }
 
-// ---------------------- FAVORITES SCREEN ----------------------
-class FavoritesScreen extends StatelessWidget {
+// ---------------------- WISHLIST SCREEN ----------------------
+class WishlistScreen extends StatelessWidget {
   final List<ArtisanProduct> favorites;
+  final Function(ArtisanProduct) onRemoveFromWishlist;
+  final Function(ArtisanProduct) onAddToCart;
 
-  FavoritesScreen({Key? key, required this.favorites}) : super(key: key);
+  WishlistScreen({
+    Key? key,
+    required this.favorites,
+    required this.onRemoveFromWishlist,
+    required this.onAddToCart,
+  }) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Favorites", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF7D3C98),
-      ),
-      body: favorites.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.favorite_outline, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    "No favorites yet",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Swipe right on products you love to save them here",
-                    style: TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: favorites.length,
-              itemBuilder: (context, index) {
-                final product = favorites[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    // We use the same image map logic here for consistency
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8.0),
-                      child: _productImagePaths.containsKey(product.id)
-                        ? Image.asset(
-                            _productImagePaths[product.id]!,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const CircleAvatar(
-                                backgroundColor: Colors.grey,
-                                child: Icon(Icons.image, color: Colors.white),
-                              );
-                            },
-                          )
-                        : const CircleAvatar(
-                            backgroundColor: Colors.grey,
-                            child: Icon(Icons.image, color: Colors.white),
-                          ),
-                    ),
-                    title: Text(product.title),
-                    subtitle: Text("by ${product.artist.name}"),
-                    trailing: Text(product.formattedPrice),
-                  ),
-                );
-              },
-            ),
-    );
-  }
-
-  // Helper map for the favorites screen
   final Map<String, String> _productImagePaths = {
     '1': 'assets/products/saree.jpg',
-      '2': 'assets/products/pottery.jpg',
-      '3': 'assets/products/elephant.jpg',
-      '4': 'assets/products/jewelry.jpg',
+    '2': 'assets/products/pottery.jpg',
+    '3': 'assets/products/elephant.jpg',
+    '4': 'assets/products/jewelry.jpg',
     '5': 'assets/products/pashmina.jpg',
     '6': 'assets/products/madhubani.jpg',
     '7': 'assets/products/diya.jpg',
@@ -938,41 +951,435 @@ class FavoritesScreen extends StatelessWidget {
     '9': 'assets/products/mojari.jpg',
     '10': 'assets/products/bamboo.jpg',
   };
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(vertical: 24.0),
+            //   child: Text(
+            //     'OPLETH',
+            //     textAlign: TextAlign.center,
+            //     style: GoogleFonts.cinzel(
+            //       color: Colors.white,
+            //       fontSize: 28,
+            //       fontWeight: FontWeight.w300,
+            //       letterSpacing: 3,
+            //     ),
+            //   ),
+            // ),
+            const Text(
+              'Wishlist',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: favorites.isEmpty
+                  ? _buildEmptyView()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: favorites.length,
+                      itemBuilder: (context, index) {
+                        final product = favorites[index];
+                        return _buildWishlistItem(product);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWishlistItem(ArtisanProduct product) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC3B1E1).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(
+              _productImagePaths[product.id] ??
+                  'assets/products/placeholder.jpg',
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey[800],
+                child: const Icon(Icons.image, color: Colors.grey, size: 40),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(product.title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(product.artist.name,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(product.formattedPrice,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => onAddToCart(product),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Add to bag'),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.white),
+                      onPressed: () => onRemoveFromWishlist(product),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyView() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.favorite_outline, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "Your Wishlist is Empty",
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Swipe right on products to save them.",
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ---------------------- PROFILE SCREEN ----------------------
+// In main.dart, replace the existing ProfileScreen class
+
+// REPLACE your old ProfileScreen class with this simplified version
+
+// REPLACE your old ProfileScreen class with this one
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Get the actual screen size
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Profile", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF7D3C98),
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // 1. The Background Image
+          // We wrap the image in a SizedBox to explicitly give it the full screen dimensions
+          SizedBox(
+            width: screenSize.width,
+            height: screenSize.height,
+            child: Image.asset(
+              'assets/background/yoursTruly.jpg', // Make sure this is your exact filename
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          // 2. Your content (Text) - no changes here
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 30.0, top: 40.0, right: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'HI ADHIRAJ!',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 50),
+                  _buildMenuItem('PROFILE'),
+                  _buildMenuItem('ORDERS'),
+                  _buildMenuItem('ADDRESSES'),
+                  _buildMenuItem('REFUNDS'),
+                  _buildMenuItem('GIFT CARDS'),
+                  _buildMenuItem('RATE AND REVIEW'),
+                  _buildMenuItem('SCREEN MODE'),
+                  _buildMenuItem('SETTINGS'),
+                  _buildMenuItem('ONLINE ORDER HELP'),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-      body: const Center(
-        child: Text("User Profile (Coming Soon)"),
+    );
+  }
+
+  Widget _buildMenuItem(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Text(
+        title,
+        style: GoogleFonts.montserrat(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
 }
+// ---------------------- CART SCREEN ----------------------
+// REPLACE your old CartScreen StatefulWidget and its State with this
 
-//--------------------------cart screen--------------------------
+class CartScreen extends StatefulWidget {
+  final List<CartItem> cartItems;
+  final Function(CartItem, int) onUpdateQuantity;
+  final Function(CartItem) onMoveToWishlist; // Add this
 
-class CartScreen extends StatelessWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  const CartScreen({
+    Key? key,
+    required this.cartItems,
+    required this.onUpdateQuantity,
+    required this.onMoveToWishlist, // Add this
+  }) : super(key: key);
+
+  @override
+  _CartScreenState createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  final Map<String, String> _productImagePaths = {
+    '1': 'assets/products/saree.jpg',
+    '2': 'assets/products/pottery.jpg',
+    '3': 'assets/products/elephant.jpg',
+    '4': 'assets/products/jewelry.jpg',
+    '5': 'assets/products/pashmina.jpg',
+    '6': 'assets/products/madhubani.jpg',
+    '7': 'assets/products/diya.jpg',
+    '8': 'assets/products/warli.jpg',
+    '9': 'assets/products/mojari.jpg',
+    '10': 'assets/products/bamboo.jpg',
+  };
+
+  double get _subtotal {
+    if (widget.cartItems.isEmpty) return 0;
+    return widget.cartItems.fold(
+        0, (sum, item) => sum + (item.product.price * item.quantity));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Cart", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF7D3C98),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
+              child: Text(
+                'Shopping bag',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: widget.cartItems.isEmpty
+                  ? _buildEmptyCart()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: widget.cartItems.length,
+                      itemBuilder: (context, index) {
+                        final item = widget.cartItems[index];
+                        return _buildCartItemCard(item);
+                      },
+                    ),
+            ),
+            // We keep the summary view as it's essential for a cart
+            if (widget.cartItems.isNotEmpty) _buildSummary(),
+          ],
+        ),
       ),
-      body: const Center(
-        child: Text("Cart Screen (Coming Soon)"),
+    );
+  }
+
+  Widget _buildCartItemCard(CartItem item) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC3B1E1).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12.0),
+            child: Image.asset(
+              _productImagePaths[item.product.id] ?? 'assets/placeholder.jpg',
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (ctx, err, st) => Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[800],
+                  child: const Icon(Icons.image, color: Colors.grey)),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.product.title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+                const SizedBox(height: 4),
+                Text(item.product.artist.name,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(item.product.formattedPrice,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14)),
+                const SizedBox(height: 8),
+                // Replaced "Move to Wishlist" button with quantity controls
+                Row(
+                  children: [
+                    const Text("Quantity:", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline, color: Colors.white70),
+                      onPressed: () => widget.onUpdateQuantity(item, -1),
+                    ),
+                    Text(item.quantity.toString(),
+                        style: const TextStyle(color: Colors.white, fontSize: 16)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, color: Colors.white70),
+                      onPressed: () => widget.onUpdateQuantity(item, 1),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+          // Action Icons
+          Column(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.white),
+                tooltip: "Remove from bag",
+                onPressed: () => widget.onUpdateQuantity(item, -item.quantity), // Set quantity to 0 to remove
+              ),
+              IconButton(
+                icon: const Icon(Icons.favorite_outline, color: Colors.white),
+                tooltip: "Move to Wishlist",
+                onPressed: () => widget.onMoveToWishlist(item),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyCart() {
+    // This can remain the same
+    return const Center(
+      child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text("Your bag is empty",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          ]),
+    );
+  }
+
+  Widget _buildSummary() {
+    // This can remain the same
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Subtotal', style: TextStyle(color: Colors.white, fontSize: 16)),
+              Text(
+                'Rs. ${_subtotal.toStringAsFixed(2)}',
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple[400],
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              onPressed: () { /* TODO: Checkout flow */ },
+              child: const Text('Proceed to Checkout',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
