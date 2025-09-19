@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "730420257827",
+    "project_id": "artisanswipe",
+    "storage_bucket": "artisanswipe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:730420257827:android:24adc684e88f6c5d2b7d96",
+        "android_client_info": {
+          "package_name": "com.example.artisan_swipe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBHg3vDmIAsdFC_xsk0h2WgJIcn6fEOFg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

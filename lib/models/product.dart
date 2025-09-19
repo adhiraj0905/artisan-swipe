@@ -54,27 +54,27 @@ class ArtisanProduct {
 
   // Convert from JSON (for API integration later)
   factory ArtisanProduct.fromJson(Map<String, dynamic> json) {
-    return ArtisanProduct(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      price: (json['price'] as num).toDouble(),
-      currency: json['currency'] ?? 'INR',
-      imageUrls: List<String>.from(json['imageUrls']),
-      artist: Artist.fromJson(json['artist']),
-      categories: List<String>.from(json['categories']),
-      technique: json['technique'],
-      dimensions: Map<String, String>.from(json['dimensions']),
-      material: json['material'],
-      isAvailable: json['isAvailable'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
-      viewCount: json['viewCount'] ?? 0,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: json['reviewCount'] ?? 0,
-      tags: List<String>.from(json['tags']),
-      origin: json['origin'],
-    );
-  }
+  return ArtisanProduct(
+    id: json['id'] ?? '',
+    title: json['title'] ?? 'Untitled Product',
+    description: json['description'] ?? 'No description available.',
+    price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    currency: json['currency'] ?? 'INR',
+    imageUrls: json['imageUrls'] != null ? List<String>.from(json['imageUrls']) : [],
+    artist: Artist.fromJson(json['artist'] ?? {}),
+    categories: json['categories'] != null ? List<String>.from(json['categories']) : [],
+    technique: json['technique'] ?? 'N/A',
+    dimensions: json['dimensions'] != null ? Map<String, String>.from(json['dimensions']) : {},
+    material: json['material'] ?? 'N/A',
+    isAvailable: json['isAvailable'] ?? true,
+    createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+    viewCount: json['viewCount'] ?? 0,
+    rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+    reviewCount: json['reviewCount'] ?? 0,
+    tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
+    origin: json['origin'] ?? 'Unknown',
+  );
+}
 
   // Convert to JSON (for API integration later)
   Map<String, dynamic> toJson() {
@@ -147,25 +147,25 @@ class Artist {
   bool get isEstablished => yearsOfExperience >= 10;
 
   factory Artist.fromJson(Map<String, dynamic> json) {
-    return Artist(
-      id: json['id'],
-      name: json['name'],
-      bio: json['bio'],
-      profileImageUrl: json['profileImageUrl'],
-      location: json['location'],
-      state: json['state'],
-      specialties: List<String>.from(json['specialties']),
-      yearsOfExperience: json['yearsOfExperience'] ?? 0,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      totalProducts: json['totalProducts'] ?? 0,
-      totalSales: json['totalSales'] ?? 0,
-      joinedDate: DateTime.parse(json['joinedDate']),
-      isVerified: json['isVerified'] ?? false,
-      socialLinks: Map<String, String>.from(json['socialLinks'] ?? {}),
-      phoneNumber: json['phoneNumber'] ?? '',
-      email: json['email'] ?? '',
-    );
-  }
+  return Artist(
+    id: json['id'] ?? '',
+    name: json['name'] ?? 'Unknown Artist',
+    bio: json['bio'] ?? '',
+    profileImageUrl: json['profileImageUrl'] ?? '',
+    location: json['location'] ?? 'Unknown',
+    state: json['state'] ?? '',
+    specialties: json['specialties'] != null ? List<String>.from(json['specialties']) : [],
+    yearsOfExperience: json['yearsOfExperience'] ?? 0,
+    rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+    totalProducts: json['totalProducts'] ?? 0,
+    totalSales: json['totalSales'] ?? 0,
+    joinedDate: json['joinedDate'] != null ? DateTime.parse(json['joinedDate']) : DateTime.now(),
+    isVerified: json['isVerified'] ?? false,
+    socialLinks: json['socialLinks'] != null ? Map<String, String>.from(json['socialLinks']) : {},
+    phoneNumber: json['phoneNumber'] ?? '',
+    email: json['email'] ?? '',
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {
