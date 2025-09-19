@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'ai_room_stylist_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,6 +103,16 @@ class _MainScreenState extends State<MainScreen> {
       _showCustomNotification('${product.title} added to bag.');
     });
   }
+  // Inside _MainScreenState in lib/main.dart
+
+  void _addToWishlist(ArtisanProduct product) {
+    setState(() {
+      if (!_favorites.any((fav) => fav.id == product.id)) {
+        _favorites.add(product);
+        _showCustomNotification('${product.title} added to wishlist.');
+      }
+    });
+  }
 
   Widget _buildCustomNotification() {
   // Use AnimatedPositioned to slide the widget up from the bottom
@@ -169,7 +180,11 @@ class _MainScreenState extends State<MainScreen> {
                   });
                 },
               ),
-              SearchScreen(onNavigateHome: _navigateToHome),
+              SearchScreen(
+      onNavigateHome: _navigateToHome,
+      onAddToCart: _addToCart,
+      onAddToWishlist: _addToWishlist,
+    ),
               WishlistScreen(
                 favorites: _favorites,
                 onRemoveFromWishlist: _removeFromWishlist,
@@ -744,7 +759,14 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
 // ---------------------- SEARCH SCREEN ----------------------
 class SearchScreen extends StatefulWidget {
   final VoidCallback onNavigateHome;
-  const SearchScreen({Key? key, required this.onNavigateHome}) : super(key: key);
+  final Function(ArtisanProduct) onAddToCart;
+  final Function(ArtisanProduct) onAddToWishlist;
+  const SearchScreen({
+    Key? key,
+    required this.onNavigateHome,
+    required this.onAddToCart,
+    required this.onAddToWishlist,
+  }) : super(key: key);
 
   @override
   _SearchScreenState createState() => _SearchScreenState();
@@ -779,6 +801,8 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  // In lib/main.dart, replace the whole build method in _SearchScreenState
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -796,6 +820,7 @@ class _SearchScreenState extends State<SearchScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        // The FloatingActionButton has been REMOVED from here.
         body: GestureDetector(
           onTap: () => _focusNode.unfocus(),
           child: SafeArea(
@@ -806,6 +831,40 @@ class _SearchScreenState extends State<SearchScreen> {
                 children: [
                   _buildSearchBar(),
                   const SizedBox(height: 20),
+                  
+                  // --- NEW BUTTON ADDED HERE ---
+                  // Only show this button when the user is NOT actively typing in the search bar
+                  if (!_isSearching)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                        label: const Text(
+                          'AI Room Stylist',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AiRoomStylistScreen(
+                                onAddToCart: widget.onAddToCart,
+                                onAddToWishlist: widget.onAddToWishlist,
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7D3C98).withOpacity(0.5),
+                          minimumSize: const Size(double.infinity, 50), // Make it full-width
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: const Color(0xFF7D3C98)),
+                        ),
+                      ),
+                    ),
+
                   Expanded(
                     child: _isSearching
                         ? _buildActiveSearchView()
@@ -819,7 +878,6 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
-
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.only(top: 20.0),
