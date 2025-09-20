@@ -55,22 +55,25 @@ class _MainScreenState extends State<MainScreen> {
   String _notificationMessage = '';
   Timer? _notificationTimer;
 
+  // In _MainScreenState
+  Color _notificationColor = Colors.green; // Default color
+
   @override
   void dispose() {
     _notificationTimer?.cancel(); // Cancel timer to prevent memory leaks
     super.dispose();
   }
 
-  void _showCustomNotification(String message) {
-    // If a timer is already active, cancel it
+  // In _MainScreenState, modify this method
+  void _showCustomNotification(String message, {Color color = Colors.green}) { // Added color parameter
     _notificationTimer?.cancel();
 
     setState(() {
       _notificationMessage = message;
+      _notificationColor = color; // Set the color
       _showNotification = true;
     });
 
-    // Set a timer to hide the notification after 3 seconds
     _notificationTimer = Timer(const Duration(seconds: 3), () {
       setState(() {
         _showNotification = false;
@@ -132,9 +135,9 @@ class _MainScreenState extends State<MainScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.25),
+                color: _notificationColor.withOpacity(0.25), // Use the state variable
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.green.withOpacity(0.4)),
+                border: Border.all(color: _notificationColor.withOpacity(0.4)),
               ),
               child: Text(
                 _notificationMessage,
@@ -189,6 +192,7 @@ class _MainScreenState extends State<MainScreen> {
                 favorites: _favorites,
                 onRemoveFromWishlist: _removeFromWishlist,
                 onAddToCart: _addToCart,
+                onAddAllToCart: _addAllWishlistToCart,
               ),
               const ProfileScreen(),
               CartScreen(
@@ -269,9 +273,37 @@ class _MainScreenState extends State<MainScreen> {
       }
       // Remove from cart
       _cartItems.remove(cartItem);
+
+      _showCustomNotification(
+        '${cartItem.product.title} moved to wishlist.',
+        color: Colors.blueAccent, // A nice blue for this action
+      );
     });
   }
+  // In _MainScreenState
 
+  void _addAllWishlistToCart() {
+    if (_favorites.isEmpty) return; // Do nothing if the wishlist is empty
+
+    setState(() {
+      // Go through each product in the wishlist
+      for (var product in _favorites) {
+        // Use the same logic as _addToCart to add/update quantity
+        final existingItemIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
+        if (existingItemIndex != -1) {
+          _cartItems[existingItemIndex].quantity++;
+        } else {
+          _cartItems.add(CartItem(product: product));
+        }
+      }
+
+      // Clear the entire wishlist after adding them to the cart
+      _favorites.clear();
+    });
+
+    // Show a confirmation notification
+    _showCustomNotification('All wishlist items added to bag.');
+  }
   
 }
 
@@ -472,134 +504,155 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.white),
-            SizedBox(height: 16),
-            Text(
-              "Finding amazing artisan pieces...",
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ],
-        ),
-      );
-    }
+  // In _SwipeDemoState, replace your entire _buildBody method with this one
 
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 48),
-            const SizedBox(height: 16),
-            const Text(
-              "Oops! Something went wrong",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Please check your connection and try again",
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loadProducts,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF7D3C98),
-              ),
-              child: const Text("Retry"),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_products.isEmpty || _currentIndex >= _products.length) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inventory_2_outlined, color: Colors.white, size: 48),
-            SizedBox(height: 16),
-            Text(
-              "No more products",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Check back later for new artisan pieces",
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SafeArea(
+Widget _buildBody() {
+  // --- All your initial checks for loading, error, and empty products remain the same ---
+  if (_isLoading) {
+    return const Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0),
-            child: Text(
-              'OPLETH',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cinzel(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w300,
-                letterSpacing: 3,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (_currentIndex + 3 < _products.length)
-                  Transform.translate(
-                    offset: const Offset(0, -45),
-                    child: _buildStaticCard(_products[_currentIndex + 3]),
-                  ),
-                if (_currentIndex + 2 < _products.length)
-                  Transform.translate(
-                    offset: const Offset(0, -30),
-                    child: _buildStaticCard(_products[_currentIndex + 2]),
-                  ),
-                if (_currentIndex + 1 < _products.length)
-                  Transform.translate(
-                    offset: const Offset(0, -15),
-                    child: _buildStaticCard(_products[_currentIndex + 1]),
-                  ),
-                if (_currentIndex < _products.length)
-                  Transform.translate(
-                    offset: _cardOffset,
-                    child: Transform.rotate(
-                      angle: _cardAngle,
-                      child: Container(
-                        decoration: _getCardDecoration(),
-                        child: GestureDetector(
-                          onPanStart: _onPanStart,
-                          onPanUpdate: _onPanUpdate,
-                          onPanEnd: _onPanEnd,
-                          child: _buildProductCard(_products[_currentIndex]),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          CircularProgressIndicator(color: Colors.white),
+          SizedBox(height: 16),
+          Text(
+            "Finding amazing artisan pieces...",
+            style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
       ),
     );
   }
+
+  if (_error != null) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.white, size: 48),
+          const SizedBox(height: 16),
+          const Text(
+            "Oops! Something went wrong",
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Please check your connection and try again",
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _loadProducts,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF7D3C98),
+            ),
+            child: const Text("Retry"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  if (_products.isEmpty || _currentIndex >= _products.length) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory_2_outlined, color: Colors.white, size: 48),
+          SizedBox(height: 16),
+          Text(
+            "No more products",
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Check back later for new artisan pieces",
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- THIS IS THE CORRECTED LAYOUT ---
+  return SafeArea(
+    child: Stack( // Use a Stack instead of a Column
+      children: [
+        // The Title, aligned to the top center of the screen
+        Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 24.0), // Padding from the top edge
+            child: Text(
+              'OPELITH',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cinzel(
+                color: Colors.white,
+                fontSize: 34,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 3,
+              ),
+            ),
+          ),
+        ),
+
+        // The Card Stack, now perfectly centered in the available space
+        Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Furthest back card
+              if (_currentIndex + 3 < _products.length)
+                Transform.translate(
+                  offset: const Offset(0, -45),
+                  child: _buildStaticCard(_products[_currentIndex + 3]),
+                ),
+
+              // Middle card
+              if (_currentIndex + 2 < _products.length)
+                Transform.translate(
+                  offset: const Offset(0, -30),
+                  child: _buildStaticCard(_products[_currentIndex + 2]),
+                ),
+
+              // Closest background card
+              if (_currentIndex + 1 < _products.length)
+                Transform.translate(
+                  offset: const Offset(0, -15),
+                  child: _buildStaticCard(_products[_currentIndex + 1]),
+                ),
+
+              // Front card (interactive)
+              if (_currentIndex < _products.length)
+                Transform.translate(
+                  offset: _cardOffset,
+                  child: Transform.rotate(
+                    angle: _cardAngle,
+                    child: Container(
+                      decoration: _getCardDecoration(),
+                      child: GestureDetector(
+                        onPanStart: _onPanStart,
+                        onPanUpdate: _onPanUpdate,
+                        onPanEnd: _onPanEnd,
+                        onTap: () { 
+                          if (_currentIndex < _products.length) {
+                            _showProductDetails(_products[_currentIndex]);
+                          }
+                        },
+                        child: _buildProductCard(_products[_currentIndex]),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   BoxDecoration _getCardDecoration() {
     Color glowColor = Colors.transparent;
@@ -752,6 +805,18 @@ class _SwipeDemoState extends State<SwipeDemo> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+  }
+
+  void _showProductDetails(ArtisanProduct product) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Allows the sheet to be almost full-screen
+      backgroundColor: Colors.transparent, // Important for the frosted glass effect
+      builder: (context) {
+        // We will create this new widget in the next step
+        return ProductDetailsSheet(product: product);
+      },
     );
   }
 }
@@ -995,12 +1060,14 @@ class WishlistScreen extends StatelessWidget {
   final List<ArtisanProduct> favorites;
   final Function(ArtisanProduct) onRemoveFromWishlist;
   final Function(ArtisanProduct) onAddToCart;
+  final VoidCallback onAddAllToCart; // Add this
 
   WishlistScreen({
     Key? key,
     required this.favorites,
     required this.onRemoveFromWishlist,
     required this.onAddToCart,
+    required this.onAddAllToCart, // Add this
   }) : super(key: key);
 
   final Map<String, String> _productImagePaths = {
@@ -1016,40 +1083,34 @@ class WishlistScreen extends StatelessWidget {
     '10': 'assets/products/bamboo.jpg',
   };
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
+  // In WishlistScreen, replace the entire build method with this one
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.black,
+    body: SafeArea(
+      child: Padding( // <-- 1. WRAP the Column with Padding
+        padding: const EdgeInsets.only(bottom: 80.0), // <-- 2. ADD bottom padding here
         child: Column(
           children: [
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(vertical: 24.0),
-            //   child: Text(
-            //     'OPLETH',
-            //     textAlign: TextAlign.center,
-            //     style: GoogleFonts.cinzel(
-            //       color: Colors.white,
-            //       fontSize: 28,
-            //       fontWeight: FontWeight.w300,
-            //       letterSpacing: 3,
-            //     ),
-            //   ),
-            // ),
-            const Text(
-              'Wishlist',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
+              child: Text(
+                'Wishlist',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(height: 20),
             Expanded(
               child: favorites.isEmpty
                   ? _buildEmptyView()
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      // 3. REMOVE the old bottom padding from here
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0), 
                       itemCount: favorites.length,
                       itemBuilder: (context, index) {
                         final product = favorites[index];
@@ -1057,11 +1118,33 @@ class WishlistScreen extends StatelessWidget {
                       },
                     ),
             ),
+            if (favorites.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple[400],
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: onAddAllToCart,
+                    child: const Text('Add all to bag',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildWishlistItem(ArtisanProduct product) {
     return Container(
@@ -1170,7 +1253,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the actual screen size
     final screenSize = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -1178,7 +1260,6 @@ class ProfileScreen extends StatelessWidget {
       body: Stack(
         children: [
           // 1. The Background Image
-          // We wrap the image in a SizedBox to explicitly give it the full screen dimensions
           SizedBox(
             width: screenSize.width,
             height: screenSize.height,
@@ -1188,13 +1269,18 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. Your content (Text) - no changes here
+          // 2. The Content
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(left: 30.0, top: 40.0, right: 20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 30.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- Top Spacer ---
+                  // This flexible space pushes the content down from the top
+                  const Spacer(flex: 2),
+
+                  // --- User Name ---
                   Text(
                     'HI ADHIRAJ!',
                     style: GoogleFonts.montserrat(
@@ -1204,16 +1290,31 @@ class ProfileScreen extends StatelessWidget {
                       letterSpacing: 2,
                     ),
                   ),
-                  const SizedBox(height: 50),
-                  _buildMenuItem('PROFILE'),
-                  _buildMenuItem('ORDERS'),
-                  _buildMenuItem('ADDRESSES'),
-                  _buildMenuItem('REFUNDS'),
-                  _buildMenuItem('GIFT CARDS'),
-                  _buildMenuItem('RATE AND REVIEW'),
-                  _buildMenuItem('SCREEN MODE'),
-                  _buildMenuItem('SETTINGS'),
-                  _buildMenuItem('ONLINE ORDER HELP'),
+
+                  // --- Middle Spacer ---
+                  // This creates a proportional gap between the name and the menu
+                  const Spacer(flex: 1),
+                  
+                  // --- Menu Items ---
+                  // This column holds your list of options
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildMenuItem('PROFILE'),
+                      _buildMenuItem('ORDERS'),
+                      _buildMenuItem('ADDRESSES'),
+                      _buildMenuItem('REFUNDS'),
+                      _buildMenuItem('GIFT CARDS'),
+                      _buildMenuItem('RATE AND REVIEW'),
+                      _buildMenuItem('SCREEN MODE'),
+                      _buildMenuItem('SETTINGS'),
+                      _buildMenuItem('ONLINE ORDER HELP'),
+                    ],
+                  ),
+
+                  // --- Bottom Spacer ---
+                  // This pushes the menu up from the bottom, ensuring it's not too low
+                  const Spacer(flex: 3),
                 ],
               ),
             ),
@@ -1279,9 +1380,11 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
+  return Scaffold(
+    backgroundColor: Colors.black,
+    body: SafeArea(
+      child: Padding( // <-- 1. WRAP the Column with a Padding widget
+        padding: const EdgeInsets.only(bottom: 80.0), // <-- 2. ADD this line of padding
         child: Column(
           children: [
             const Padding(
@@ -1311,8 +1414,9 @@ class _CartScreenState extends State<CartScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCartItemCard(CartItem item) {
     return Container(
@@ -1441,6 +1545,131 @@ class _CartScreenState extends State<CartScreen> {
                   style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// Add this new widget class to your file
+
+class ProductDetailsSheet extends StatelessWidget {
+  final ArtisanProduct product;
+
+  const ProductDetailsSheet({Key? key, required this.product}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // This widget makes the sheet draggable and scrollable
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9, // Start at 90% of screen height
+      minChildSize: 0.5,     // Can be dragged down to 50%
+      maxChildSize: 0.9,     // Can be dragged up to 90%
+      builder: (_, scrollController) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFC3B1E1).withOpacity(0.3), // Light purple glass color
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: _buildContent(context, scrollController),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // In ProductDetailsSheet, replace the _buildContent method with this one
+
+Widget _buildContent(BuildContext context, ScrollController scrollController) {
+  return ListView(
+    controller: scrollController,
+    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+    children: [
+      // Header with Pull-down indicator and Back button
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            Container( // The little pull-down bar
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(width: 48), // Balances the IconButton for centering
+          ],
+        ),
+      ),
+
+      // Product Details
+      Text(product.title, style: GoogleFonts.cinzel(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 4),
+      Text(product.artist.name, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+      const SizedBox(height: 24),
+      Text(
+        'Introducing the ${product.title}',
+        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        product.description,
+        style: const TextStyle(color: Colors.white70, fontSize: 16, height: 1.5),
+      ),
+      const SizedBox(height: 24),
+      const Text(
+        'Dimensions',
+        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 8),
+      // Here you would map over your product's actual dimensions
+      _buildDimensionRow('Diameter: 18-22 cm (about the size of a basketball)'),
+      _buildDimensionRow('Thickness of each strand: 2.5-3 cm'),
+      _buildDimensionRow('Weight: 1.5-2.5 kg'),
+      const SizedBox(height: 24),
+        
+      // --- TAGS SECTION COMMENTED OUT ---
+      // const Text(
+      //   'Tags',
+      //   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+      // ),
+      // const SizedBox(height: 8),
+      // Wrap( 
+      //   spacing: 8.0,
+      //   runSpacing: 8.0,
+      //   children: product.tags.map((tag) => Chip(
+      //     label: Text(tag),
+      //     backgroundColor: Colors.white.withOpacity(0.2),
+      //     labelStyle: const TextStyle(color: Colors.white),
+      //   )).toList(),
+      // ),
+      // --- END OF TAGS SECTION ---
+
+      const SizedBox(height: 40), // Extra padding at the bottom
+    ],
+  );
+}
+
+  // Helper widget for the bulleted list
+  Widget _buildDimensionRow(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('•  ', style: TextStyle(color: Colors.white70, fontSize: 16)),
+          Expanded(child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 16))),
         ],
       ),
     );
